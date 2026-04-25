@@ -93,16 +93,6 @@ body {
   background: var(--brand-bg);
 }
 
-.sideNav__hint {
-  margin-top: auto;
-  color: var(--muted);
-  font-size: 12px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--panel);
-}
-
 .main {
   display: flex;
   flex-direction: column;
