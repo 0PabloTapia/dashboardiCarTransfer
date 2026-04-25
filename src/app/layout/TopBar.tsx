@@ -2,11 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { getCurrentOrgId, getOrgs, setCurrentOrgId } from '../mock/api'
 import { resetDB } from '../mock/storage'
 import type { B2BOrg } from '../types'
-import { Button, Select } from '../ui/components'
-import { useToast } from '../ui/toast'
+import { Button, Layout, Select, Space, Typography, message } from 'antd'
 
 export function TopBar() {
-  const toast = useToast()
   const [orgs, setOrgs] = useState<B2BOrg[]>([])
   const [orgId, setOrgId] = useState<string>('')
 
@@ -26,51 +24,47 @@ export function TopBar() {
   const currentOrg = useMemo(() => orgs.find((o) => o.id === orgId), [orgId, orgs])
 
   return (
-    <header className="topBar">
-      <div className="topBar__left">
-        <div className="topBar__title">Plataforma B2B de Transferencia Digital</div>
-        <div className="topBar__subtitle">Mock sin backend · Integración “Registro Civil” simulada</div>
+    <Layout.Header className="antTopbar">
+      <div className="antTopbar__left">
+        <Typography.Title level={5} className="antTopbar__title">
+          Plataforma B2B de Contratos Digitales
+        </Typography.Title>
+        <Typography.Text type="secondary" className="antTopbar__sub">
+          Mock sin backend · Validación de identidad/registro simulada
+        </Typography.Text>
       </div>
 
-      <div className="topBar__right">
-        <div className="fieldRow">
-          <label className="label" htmlFor="org">
+      <Space size={12} align="end">
+        <div className="antTopbar__field">
+          <Typography.Text type="secondary" className="antTopbar__label">
             Cliente B2B
-          </label>
+          </Typography.Text>
           <Select
-            id="org"
             value={orgId}
-            onChange={async (e) => {
-              const next = e.target.value
+            style={{ width: 240 }}
+            options={orgs.map((o) => ({ value: o.id, label: o.name }))}
+            onChange={async (next) => {
               setOrgId(next)
               await setCurrentOrgId(next)
-              toast.push({ tone: 'info', title: 'Cliente cambiado', message: orgs.find((x) => x.id === next)?.name })
+              message.info(`Cliente cambiado: ${orgs.find((x) => x.id === next)?.name ?? ''}`)
             }}
-          >
-            {orgs.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.name}
-              </option>
-            ))}
-          </Select>
+          />
         </div>
 
         <Button
-          tone="neutral"
-          type="button"
           onClick={() => {
             resetDB()
             window.location.reload()
           }}
-          aria-label="Resetear datos mock"
         >
           Reset mock
         </Button>
-        <div className="topBar__orgPill" title={currentOrg?.name ?? ''}>
+
+        <div className="antTopbar__pill" title={currentOrg?.name ?? ''}>
           {currentOrg?.name ?? '—'}
         </div>
-      </div>
-    </header>
+      </Space>
+    </Layout.Header>
   )
 }
 

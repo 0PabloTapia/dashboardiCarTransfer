@@ -2,14 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getContract, signContract, validateWithRegistry } from '../mock/api'
 import type { Contract } from '../types'
-import { Badge, Button, Card, TextLink } from '../ui/components'
-import { useToast } from '../ui/toast'
 import { fmtDate, statusLabel, statusTone } from '../utils/format'
+import { Button, Card, Descriptions, Divider, List, Space, Tag, Typography, message } from 'antd'
 
 export function ContractDetailPage() {
   const { id } = useParams()
   const nav = useNavigate()
-  const toast = useToast()
   const [c, setC] = useState<Contract | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -38,26 +36,28 @@ export function ContractDetailPage() {
   const registryBadge = useMemo(() => {
     if (!c) return null
     const s = c.registryValidation.status
-    if (s === 'OK') return <Badge tone="green">Registro Civil: OK</Badge>
-    if (s === 'FAIL') return <Badge tone="red">Registro Civil: Error</Badge>
-    if (s === 'IN_PROGRESS') return <Badge tone="yellow">Registro Civil: Validando…</Badge>
-    return <Badge tone="gray">Registro Civil: Sin ejecutar</Badge>
+    if (s === 'OK') return <Tag color="green">Registro Civil: OK</Tag>
+    if (s === 'FAIL') return <Tag color="red">Registro Civil: Error</Tag>
+    if (s === 'IN_PROGRESS') return <Tag color="gold">Registro Civil: Validando…</Tag>
+    return <Tag>Registro Civil: Sin ejecutar</Tag>
   }, [c])
 
   if (!id) return null
 
   return (
-    <div className="stack">
-      <div className="pageHeader">
+    <Space direction="vertical" size={14} style={{ width: '100%' }}>
+      <Space align="baseline" style={{ width: '100%', justifyContent: 'space-between' }}>
         <div>
-          <h1 className="h1">Detalle de contrato</h1>
-          <p className="muted mono">{id}</p>
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            Detalle de contrato
+          </Typography.Title>
+          <Typography.Text type="secondary" code>
+            {id}
+          </Typography.Text>
         </div>
-        <div className="row">
-          <TextLink to="/contracts">Volver</TextLink>
+        <Space>
+          <Button onClick={() => nav('/contracts')}>Volver</Button>
           <Button
-            tone="neutral"
-            type="button"
             onClick={() => {
               if (!c) return
               const content = [
@@ -77,79 +77,99 @@ export function ContractDetailPage() {
               a.download = `contrato-${c.id}.txt`
               a.click()
               URL.revokeObjectURL(url)
-              toast.push({ tone: 'success', title: 'Descarga iniciada', message: 'Archivo mock (TXT).' })
+              message.success('Descarga iniciada (mock).')
             }}
           >
             Descargar (mock)
           </Button>
-        </div>
-      </div>
+        </Space>
+      </Space>
 
       <Card>
         {loading ? (
-          <div className="muted">Cargando...</div>
+          <Typography.Text type="secondary">Cargando...</Typography.Text>
         ) : !c ? (
-          <div className="muted">
-            No encontrado. <button className="textLink" onClick={() => nav('/contracts')}>Volver</button>
-          </div>
+          <Typography.Text type="secondary">
+            No encontrado.{' '}
+            <Button type="link" onClick={() => nav('/contracts')} style={{ paddingInline: 0 }}>
+              Volver
+            </Button>
+          </Typography.Text>
         ) : (
-          <div className="stack">
-            <div className="row row--spread">
-              <div className="row">
-                <Badge tone={statusTone(c.status)}>{statusLabel(c.status)}</Badge>
+          <Space direction="vertical" size={12} style={{ width: '100%' }}>
+            <Space wrap style={{ justifyContent: 'space-between', width: '100%' }}>
+              <Space wrap>
+                <Tag
+                  color={
+                    statusTone(c.status) === 'green'
+                      ? 'green'
+                      : statusTone(c.status) === 'red'
+                        ? 'red'
+                        : statusTone(c.status) === 'yellow'
+                          ? 'gold'
+                          : statusTone(c.status) === 'blue'
+                            ? 'purple'
+                            : 'default'
+                  }
+                >
+                  {statusLabel(c.status)}
+                </Tag>
                 {registryBadge}
-              </div>
-              <div className="muted">Actualizado: {fmtDate(c.updatedAt)}</div>
-            </div>
+              </Space>
+              <Typography.Text type="secondary">Actualizado: {fmtDate(c.updatedAt)}</Typography.Text>
+            </Space>
 
-            <div className="grid grid--2">
-              <div>
-                <div className="h2">Vehículo</div>
-                <div className="kv">
-                  <div className="kv__k">Patente</div>
-                  <div className="kv__v mono">{c.vehicle.plate}</div>
-                  <div className="kv__k">VIN</div>
-                  <div className="kv__v mono">{c.vehicle.vin}</div>
-                  <div className="kv__k">Modelo</div>
-                  <div className="kv__v">
-                    {c.vehicle.brand} {c.vehicle.model} · {c.vehicle.year}
-                  </div>
-                </div>
-              </div>
+            <Descriptions bordered size="small" column={2}>
+              <Descriptions.Item label="Patente">
+                <Typography.Text code>{c.vehicle.plate}</Typography.Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="VIN">
+                <Typography.Text code>{c.vehicle.vin}</Typography.Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Vehículo" span={2}>
+                {c.vehicle.brand} {c.vehicle.model} · {c.vehicle.year}
+              </Descriptions.Item>
+              <Descriptions.Item label="Vendedor">{c.seller.name}</Descriptions.Item>
+              <Descriptions.Item label="RUT vendedor">
+                <Typography.Text code>{c.seller.rut}</Typography.Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Comprador">{c.buyer.name}</Descriptions.Item>
+              <Descriptions.Item label="RUT comprador">
+                <Typography.Text code>{c.buyer.rut}</Typography.Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Validación Registro Civil" span={2}>
+                <Space direction="vertical" size={0}>
+                  <Typography.Text>{c.registryValidation.status}</Typography.Text>
+                  {c.registryValidation.summary ? (
+                    <Typography.Text type="secondary">{c.registryValidation.summary}</Typography.Text>
+                  ) : null}
+                </Space>
+              </Descriptions.Item>
+              <Descriptions.Item label="Firma" span={2}>
+                <Space>
+                  <Typography.Text>{c.signing.status}</Typography.Text>
+                  {c.signing.method ? <Typography.Text type="secondary">({c.signing.method})</Typography.Text> : null}
+                </Space>
+              </Descriptions.Item>
+            </Descriptions>
 
-              <div>
-                <div className="h2">Partes</div>
-                <div className="kv">
-                  <div className="kv__k">Vendedor</div>
-                  <div className="kv__v">{c.seller.name}</div>
-                  <div className="kv__k">RUT</div>
-                  <div className="kv__v mono">{c.seller.rut}</div>
-                  <div className="kv__k">Comprador</div>
-                  <div className="kv__v">{c.buyer.name}</div>
-                  <div className="kv__k">RUT</div>
-                  <div className="kv__v mono">{c.buyer.rut}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="row">
+            <Space>
               <Button
-                type="button"
+                type="primary"
                 disabled={!canValidate || busy}
+                loading={busy && c.registryValidation.status === 'IN_PROGRESS'}
                 onClick={async () => {
                   if (!c) return
                   setBusy(true)
                   try {
-                    toast.push({ tone: 'info', title: 'Validando…', message: 'Simulando Registro Civil' })
+                    message.loading({ content: 'Validando con Registro Civil…', key: 'rc' })
                     const updated = await validateWithRegistry(c.id)
                     setC(updated)
-                    toast.push({
-                      tone: updated.registryValidation.status === 'OK' ? 'success' : 'error',
-                      title: updated.registryValidation.status === 'OK' ? 'Validación OK' : 'Validación rechazada',
-                      message: updated.registryValidation.summary,
-                    })
+                    message.destroy('rc')
+                    if (updated.registryValidation.status === 'OK') message.success('Validación OK')
+                    else message.error('Validación rechazada')
                   } catch (e: any) {
-                    toast.push({ tone: 'error', title: 'Error', message: String(e?.message ?? e) })
+                    message.error(String(e?.message ?? e))
                   } finally {
                     setBusy(false)
                   }
@@ -159,8 +179,6 @@ export function ContractDetailPage() {
               </Button>
 
               <Button
-                tone="neutral"
-                type="button"
                 disabled={!canSign || busy}
                 onClick={async () => {
                   if (!c) return
@@ -168,9 +186,9 @@ export function ContractDetailPage() {
                   try {
                     const updated = await signContract(c.id, 'ADVANCED_E-SIGN')
                     setC(updated)
-                    toast.push({ tone: 'success', title: 'Contrato firmado', message: 'Firma electrónica avanzada (mock).' })
+                    message.success('Contrato firmado (mock).')
                   } catch (e: any) {
-                    toast.push({ tone: 'error', title: 'Error', message: String(e?.message ?? e) })
+                    message.error(String(e?.message ?? e))
                   } finally {
                     setBusy(false)
                   }
@@ -178,29 +196,32 @@ export function ContractDetailPage() {
               >
                 Firmar (mock)
               </Button>
-            </div>
+            </Space>
 
-            <div>
-              <div className="h2">Trazabilidad</div>
-              <div className="timeline">
-                {c.audit.map((e) => (
-                  <div key={e.id} className="timeline__item">
-                    <div className="timeline__dot" />
-                    <div className="timeline__body">
-                      <div className="timeline__top">
-                        <div className="timeline__actor">{e.actor}</div>
-                        <div className="muted">{fmtDate(e.at)}</div>
-                      </div>
-                      <div>{e.message}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+            <Divider style={{ marginBlock: 6 }} />
+            <Typography.Title level={5} style={{ margin: 0 }}>
+              Trazabilidad
+            </Typography.Title>
+            <List
+              dataSource={c.audit}
+              renderItem={(e) => (
+                <List.Item>
+                  <List.Item.Meta
+                    title={
+                      <Space wrap style={{ justifyContent: 'space-between', width: '100%' }}>
+                        <Typography.Text strong>{e.actor}</Typography.Text>
+                        <Typography.Text type="secondary">{fmtDate(e.at)}</Typography.Text>
+                      </Space>
+                    }
+                    description={e.message}
+                  />
+                </List.Item>
+              )}
+            />
+          </Space>
         )}
       </Card>
-    </div>
+    </Space>
   )
 }
 

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { listContracts } from '../mock/api'
 import type { Contract, ContractStatus } from '../types'
-import { Badge, Card, Input, RowLink, Select, TextLink } from '../ui/components'
 import { fmtDate, statusLabel, statusTone } from '../utils/format'
+import { Button, Card, Col, Input, Row, Select, Space, Table, Tag, Typography } from 'antd'
+import { useNavigate } from 'react-router-dom'
 
 const STATUSES: Array<{ id: ContractStatus | 'ALL'; label: string }> = [
   { id: 'ALL', label: 'Todos' },
@@ -14,6 +15,7 @@ const STATUSES: Array<{ id: ContractStatus | 'ALL'; label: string }> = [
 ]
 
 export function ContractsPage() {
+  const nav = useNavigate()
   const [q, setQ] = useState('')
   const [status, setStatus] = useState<(typeof STATUSES)[number]['id']>('ALL')
   const [items, setItems] = useState<Contract[]>([])
@@ -39,82 +41,95 @@ export function ContractsPage() {
   }, [items])
 
   return (
-    <div className="stack">
-      <div className="pageHeader">
-        <div>
-          <h1 className="h1">Contratos</h1>
-          <p className="muted">Listado B2B con filtros básicos para detectar fricción en el flujo.</p>
-        </div>
-        <TextLink to="/new-transfer">Nueva transferencia</TextLink>
-      </div>
+    <Space direction="vertical" size={14} style={{ width: '100%' }}>
+      <Row justify="space-between" align="top" gutter={[12, 12]}>
+        <Col flex="auto">
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            Contratos
+          </Typography.Title>
+          <Typography.Text type="secondary">Listado B2B con filtros para detectar fricción en el flujo.</Typography.Text>
+        </Col>
+        <Col>
+          <Button type="primary" onClick={() => nav('/new-transfer')}>
+            Nueva transferencia
+          </Button>
+        </Col>
+      </Row>
 
       <Card>
-        <div className="filters">
-          <div className="field">
-            <label className="label" htmlFor="q">
-              Buscar
-            </label>
+        <Row gutter={[12, 12]} align="bottom">
+          <Col xs={24} md={14}>
+            <Typography.Text type="secondary">Buscar</Typography.Text>
             <Input
-              id="q"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Patente, VIN, comprador, vendedor, RUT..."
+              allowClear
             />
-          </div>
-          <div className="field">
-            <label className="label" htmlFor="status">
-              Estado
-            </label>
-            <Select id="status" value={status} onChange={(e) => setStatus(e.target.value as any)}>
-              {STATUSES.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div className="filters__meta">
-            <div className="muted">
-              Total: <span className="mono">{summary.total}</span> · Pendientes:{' '}
-              <span className="mono">{summary.pending}</span> · Validados: <span className="mono">{summary.validated}</span>{' '}
-              · Firmados: <span className="mono">{summary.signed}</span>
-            </div>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="muted">Cargando...</div>
-        ) : items.length === 0 ? (
-          <div className="muted">Sin resultados.</div>
-        ) : (
-          <div className="table">
-            <div className="table__row table__head">
-              <div>ID</div>
-              <div>Vehículo</div>
-              <div>Vendedor</div>
-              <div>Comprador</div>
-              <div>Estado</div>
-              <div>Actualizado</div>
-            </div>
-            {items.map((c) => (
-              <RowLink key={c.id} to={`/contracts/${c.id}`}>
-                <div className="mono">{c.id.slice(0, 10)}…</div>
-                <div className="truncate">
-                  <div>{c.vehicle.plate}</div>
-                  <div className="muted">{c.vehicle.brand + ' ' + c.vehicle.model + ' · ' + c.vehicle.year}</div>
-                </div>
-                <div className="truncate">{c.seller.name}</div>
-                <div className="truncate">{c.buyer.name}</div>
-                <div>
-                  <Badge tone={statusTone(c.status)}>{statusLabel(c.status)}</Badge>
-                </div>
-                <div className="muted">{fmtDate(c.updatedAt)}</div>
-              </RowLink>
-            ))}
-          </div>
-        )}
+          </Col>
+          <Col xs={24} md={6}>
+            <Typography.Text type="secondary">Estado</Typography.Text>
+            <Select
+              value={status}
+              style={{ width: '100%' }}
+              options={STATUSES.map((s) => ({ value: s.id, label: s.label }))}
+              onChange={(v) => setStatus(v as any)}
+            />
+          </Col>
+          <Col xs={24} md={4}>
+            <div style={{ height: 22 }} />
+            <Typography.Text type="secondary">
+              {summary.total} total · {summary.pending} pendientes · {summary.validated} validados · {summary.signed} firmados
+            </Typography.Text>
+          </Col>
+        </Row>
       </Card>
-    </div>
+
+      <Card>
+        <Table<Contract>
+          rowKey="id"
+          loading={loading}
+          dataSource={items}
+          pagination={{ pageSize: 8, showSizeChanger: false }}
+          onRow={(record) => ({
+            onClick: () => nav(`/contracts/${record.id}`),
+            style: { cursor: 'pointer' },
+          })}
+          columns={[
+            {
+              title: 'ID',
+              dataIndex: 'id',
+              render: (v: string) => <Typography.Text code>{v.slice(0, 10)}…</Typography.Text>,
+              width: 160,
+            },
+            {
+              title: 'Vehículo',
+              render: (_, c) => (
+                <Space direction="vertical" size={0}>
+                  <Typography.Text strong>{c.vehicle.plate}</Typography.Text>
+                  <Typography.Text type="secondary">
+                    {c.vehicle.brand} {c.vehicle.model} · {c.vehicle.year}
+                  </Typography.Text>
+                </Space>
+              ),
+            },
+            { title: 'Vendedor', dataIndex: ['seller', 'name'], ellipsis: true },
+            { title: 'Comprador', dataIndex: ['buyer', 'name'], ellipsis: true },
+            {
+              title: 'Estado',
+              dataIndex: 'status',
+              render: (s: ContractStatus) => {
+                const tone = statusTone(s)
+                const color = tone === 'green' ? 'green' : tone === 'red' ? 'red' : tone === 'yellow' ? 'gold' : tone === 'blue' ? 'purple' : 'default'
+                return <Tag color={color}>{statusLabel(s)}</Tag>
+              },
+              width: 190,
+            },
+            { title: 'Actualizado', dataIndex: 'updatedAt', render: (v: string) => <Typography.Text type="secondary">{fmtDate(v)}</Typography.Text>, width: 220 },
+          ]}
+        />
+      </Card>
+    </Space>
   )
 }
 

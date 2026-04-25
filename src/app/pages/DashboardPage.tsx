@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { listContracts } from '../mock/api'
 import type { Contract } from '../types'
-import { Badge, Card, LinkButton, RowLink, TextLink } from '../ui/components'
 import { fmtDate, statusLabel, statusTone } from '../utils/format'
+import { Button, Card, Col, List, Row, Space, Tag, Typography } from 'antd'
+import { Link, useNavigate } from 'react-router-dom'
 
 export function DashboardPage() {
+  const nav = useNavigate()
   const [contracts, setContracts] = useState<Contract[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -33,84 +35,99 @@ export function DashboardPage() {
   const recent = contracts.slice(0, 5)
 
   return (
-    <div className="stack">
-      <div className="pageHeader">
-        <div>
-          <h1 className="h1">Dashboard</h1>
-          <p className="muted">
+    <Space direction="vertical" size={14} style={{ width: '100%' }}>
+      <Row justify="space-between" align="top" gutter={[12, 12]}>
+        <Col flex="auto">
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            Dashboard
+          </Typography.Title>
+          <Typography.Text type="secondary">
             Flujo principal: crear transferencia → validar con Registro Civil (mock) → firmar contrato.
-          </p>
-        </div>
-        <div className="row">
-          <TextLink to="/contracts">Ver contratos</TextLink>
-          <LinkButton to="/new-transfer">Nueva transferencia</LinkButton>
-        </div>
-      </div>
+          </Typography.Text>
+        </Col>
+        <Col>
+          <Space>
+            <Link to="/contracts">Ver contratos</Link>
+            <Button type="primary" onClick={() => nav('/new-transfer')}>
+              Nueva transferencia
+            </Button>
+          </Space>
+        </Col>
+      </Row>
 
-      <div className="grid grid--4">
-        <Card>
-          <div className="kpi">
-            <div className="kpi__label">Contratos</div>
-            <div className="kpi__value">{kpis.total}</div>
-          </div>
-        </Card>
-        <Card>
-          <div className="kpi">
-            <div className="kpi__label">Firmados</div>
-            <div className="kpi__value">{kpis.signed}</div>
-          </div>
-        </Card>
-        <Card>
-          <div className="kpi">
-            <div className="kpi__label">Pendientes validación</div>
-            <div className="kpi__value">{kpis.pending}</div>
-          </div>
-        </Card>
-        <Card>
-          <div className="kpi">
-            <div className="kpi__label">Rechazados</div>
-            <div className="kpi__value">{kpis.rejected}</div>
-          </div>
-        </Card>
-      </div>
+      <Row gutter={[12, 12]}>
+        <Col xs={24} sm={12} lg={6}>
+          <Card className="kpiCard">
+            <Typography.Text type="secondary">Contratos</Typography.Text>
+            <div className="kpiValue">{kpis.total}</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card className="kpiCard">
+            <Typography.Text type="secondary">Firmados</Typography.Text>
+            <div className="kpiValue">{kpis.signed}</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card className="kpiCard">
+            <Typography.Text type="secondary">Pendientes validación</Typography.Text>
+            <div className="kpiValue">{kpis.pending}</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card className="kpiCard">
+            <Typography.Text type="secondary">Rechazados</Typography.Text>
+            <div className="kpiValue">{kpis.rejected}</div>
+          </Card>
+        </Col>
+      </Row>
 
-      <Card>
-        <div className="cardHeader">
-          <div>
-            <div className="h2">Actividad reciente</div>
-            <div className="muted">Últimos contratos actualizados</div>
-          </div>
-          <TextLink to="/contracts">Abrir listado</TextLink>
-        </div>
-
+      <Card
+        title="Actividad reciente"
+        extra={
+          <Button type="link" onClick={() => nav('/contracts')} style={{ paddingInline: 0 }}>
+            Abrir listado
+          </Button>
+        }
+      >
         {loading ? (
-          <div className="muted">Cargando...</div>
+          <Typography.Text type="secondary">Cargando...</Typography.Text>
         ) : recent.length === 0 ? (
-          <div className="muted">No hay contratos.</div>
+          <Typography.Text type="secondary">No hay contratos.</Typography.Text>
         ) : (
-          <div className="table">
-            <div className="table__row table__head">
-              <div>ID</div>
-              <div>Patente</div>
-              <div>Comprador</div>
-              <div>Estado</div>
-              <div>Actualizado</div>
-            </div>
-            {recent.map((c) => (
-              <RowLink key={c.id} to={`/contracts/${c.id}`}>
-                <div className="mono">{c.id.slice(0, 10)}…</div>
-                <div>{c.vehicle.plate}</div>
-                <div className="truncate">{c.buyer.name}</div>
-                <div>
-                  <Badge tone={statusTone(c.status)}>{statusLabel(c.status)}</Badge>
-                </div>
-                <div className="muted">{fmtDate(c.updatedAt)}</div>
-              </RowLink>
-            ))}
-          </div>
+          <List
+            dataSource={recent}
+            renderItem={(c) => (
+              <List.Item
+                className="listRowLink"
+                onClick={() => nav(`/contracts/${c.id}`)}
+                style={{ cursor: 'pointer' }}
+              >
+                <List.Item.Meta
+                  title={
+                    <Space wrap>
+                      <Typography.Text code>{c.id.slice(0, 10)}…</Typography.Text>
+                      <Typography.Text strong>{c.vehicle.plate}</Typography.Text>
+                      <Typography.Text type="secondary" ellipsis>
+                        {c.buyer.name}
+                      </Typography.Text>
+                    </Space>
+                  }
+                  description={
+                    <Space wrap>
+                      <Tag color={statusTone(c.status) === 'green' ? 'green' : statusTone(c.status) === 'red' ? 'red' : statusTone(c.status) === 'yellow' ? 'gold' : statusTone(c.status) === 'blue' ? 'purple' : 'default'}>
+                        {statusLabel(c.status)}
+                      </Tag>
+                      <Typography.Text type="secondary">{fmtDate(c.updatedAt)}</Typography.Text>
+                    </Space>
+                  }
+                />
+              </List.Item>
+            )}
+          />
         )}
       </Card>
-    </div>
+    </Space>
   )
 }
 
